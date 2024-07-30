@@ -1,0 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+  filelog:
+    start_at: beginning
+    include: [/home/gregor/source/otelcol-cookbook/scratchpad/log-drop/app.log]
+    operators:
+    - id: container-parser
+      type: container
+      add_metadata_from_filepath: false
+    - id: json_parser
+      type: json_parser
+      on_error: drop
+exporters:
+  debug:
+    verbosity: detailed
+
+processors:
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp, filelog]
+      exporters: [debug]
