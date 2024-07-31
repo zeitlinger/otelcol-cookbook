@@ -4,7 +4,7 @@ receivers:
       grpc:
   filelog:
     start_at: beginning
-    include: [/home/gregor/source/otelcol-cookbook/scratchpad/log-drop/app.log]
+    include: [/home/gregor/source/otelcol-cookbook/scratchpad/log-drop/input.log]
     operators:
     - id: container-parser
       type: container
