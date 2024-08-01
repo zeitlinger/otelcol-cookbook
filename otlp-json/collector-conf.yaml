@@ -1,0 +1,51 @@
+receivers:
+  filelog:
+    start_at: beginning
+    include: [/home/gregor/source/otelcol-cookbook/otlp-json/input.log]
+    include_file_path: true
+    operators:
+    - id: container-parser
+      type: container
+      add_metadata_from_filepath: false
+
+exporters:
+  debug:
+    verbosity: detailed
+
+
+processors:
+  filter:
+    logs:
+      log_record:
+        - 'not IsMatch(body, ".*OtlpJsonLoggingLogRecordExporter.*")'
+  transform:
+    log_statements:
+    - context: log
+      statements:
+      - merge_maps(cache,ExtractPatterns(body,"io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingLogRecordExporter - (?P<log>.*)"), "upsert") where body != nil
+      - set(body,cache["log"])
+      - merge_maps(cache,ParseJSON(body), "upsert") where body!= nil
+      - delete_key(cache, "schemaUrl")
+      - set(body,Concat(["{\"resourceLogs\":[",cache,"]}"], ""))
+
+connectors:
+  otlpjson:
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  pipelines:
+    logs/raw:
+      receivers: [filelog]
+      processors: [filter,transform]
+      exporters: [otlpjson]
+    metrics/otlp:
+      receivers: [ otlpjson ]
+      exporters: [ debug ]
+    logs/otlp:
+      receivers: [ otlpjson ]
+      exporters: [ debug ]
+    traces/otlp:
+      receivers: [ otlpjson ]
+      exporters: [ debug ]
